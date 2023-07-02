@@ -17,7 +17,7 @@ This Lightning Web Component (LWC) provides a simple BMI (Body Mass Index) calcu
 
 ## Screenshots
 
-![BMI Calculator Screenshot](screenshot/image.png)
+![BMI Calculator Screenshot](../screenshot/image.png)
 
 ## Development
 
