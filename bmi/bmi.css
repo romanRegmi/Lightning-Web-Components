@@ -1,0 +1,41 @@
+:host {
+    --sds-c-card-color-background: #E9DCC9;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.first_section p,
+.first_section span,
+.first_section h1 {
+    color: #000000dc;
+}
+
+.second_section {
+    background-color: #EDEADE;
+    color: black;
+    padding: 1rem;
+}
+
+.input-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slds-form-element {
+    text-align: center;
+}
+
+.slds-form-element__label {
+    color: #000000dc;
+}
+
+p {
+    text-align: center;
+    margin-bottom: 1rem;
+
+}
