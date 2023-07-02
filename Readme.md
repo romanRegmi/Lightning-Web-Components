@@ -1,7 +1,5 @@
 # BMI Calculator - Lightning Web Component (LWC)
 
-![BMI Calculator](bmi-calculator.png)
-
 This Lightning Web Component (LWC) provides a simple BMI (Body Mass Index) calculator. It allows users to input their height and weight and calculates their BMI based on the provided values.
 
 ## Features
