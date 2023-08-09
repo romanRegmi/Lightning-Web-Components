@@ -1,0 +1,38 @@
+.current-weather {
+    background-color: #5372F0;
+    padding: 5px;
+}
+
+h1 {
+    color: white;
+    font-size: 1.75rem; 
+    margin: 0; 
+    padding: 5px;
+    font-weight: bold;
+}
+
+/* Define a custom class to style the button like a disabled button */
+.custom-disabled-button {
+    background-color: #6C757D; 
+    color: #bfbfbf; 
+}
+
+h2 {
+    color: white;
+    font-size: 1.3rem; 
+    margin: 0; 
+    padding: 5px; 
+    font-weight: bold; 
+}
+
+h4 {
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.cards{
+    background: #6C757D;
+    border-radius: 5px;
+    text-align: center;
+}

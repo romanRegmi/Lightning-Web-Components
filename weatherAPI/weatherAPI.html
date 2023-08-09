@@ -1,0 +1,70 @@
+<template>
+    <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_1-of-1 current-weather">
+            <h1 class="slds-p-vertical_medium slds-text-align_center">Weather App</h1>
+        </div>
+        <!-- Left Section -->
+        <div class="slds-col slds-m-around_xx-small slds-size_2-of-12">
+            <div class="slds-form-element">
+                <label class="slds-form-element__label slds-m-top_medium">Enter a City Name</label>
+                <input type="text" class="slds-input" placeholder="E.g., NYC, London, Tokyo" lwc:ref="cityRef" />
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <button
+                        class="slds-button slds-button_brand slds-button_stretch slds-m-top_small slds-border_bottom"
+                        onclick={handleWeatherFetch}>Search</button>
+                </div>
+
+                <div class="slds-form-element__control">
+                    <button class="slds-button slds-button_stretch slds-m-top_small custom-disabled-button"
+                        onclick={handleCurrentLocation}>Use Current Location</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section -->
+        <div class="slds-col slds-m-around_xx-small">
+            <div class="slds-grid slds-wrap">
+
+                <div class="slds-col slds-size_1-of-1 slds-m-top_medium">
+                    <div
+                        class="slds-box slds-p-around_medium slds-grid slds-grid_vertical-align-center current-weather">
+                        <div class="slds-col slds-size_1-of-2">
+                            <h2>{cityName} ({date})</h2>
+                            <h4>Time: {time}</h4>
+                            <h4>Temperature: {temperature}&deg;C</h4>
+                            <h4>Wind Speed: {wind_mph} mph</h4>
+                            <h4>Humidity: {humidity}</h4>
+                        </div>
+
+                        <!-- Second Section (Right Column) -->
+                        <div class="slds-col slds-size_1-of-2">
+                            <img class="slds-align_absolute-center" src={imageURL} />
+                            <h4 class ="slds-align_absolute-center">{condition}</h4>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Forecast for the next 3 hours -->
+                <div class="slds-col slds-size_1-of-1 slds-m-top_medium">
+
+                    <!-- Display weather forecast for the next 3 hours here -->
+                    <div class="slds-grid slds-wrap slds-grid_align-spread">
+                        <template for:each={nextRecords} for:item="record">
+                            <div key={record.time_x} class="slds-col slds-size_3-of-12 cards">
+                                <h2>{cityName} ({record.time_x})</h2>
+                                <h4>Temperature: {record.temp_c}&deg;C</h4>
+                                <h4>Wind Speed: {record.wind_mph} mph</h4>
+                                <h4>Humidity: {record.humidity}</h4>
+                                <img src={imageURL}>
+                                <h4>{record.condition.text}</h4>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
