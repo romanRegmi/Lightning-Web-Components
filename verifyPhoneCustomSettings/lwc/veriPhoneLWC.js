@@ -11,27 +11,48 @@ export default class VeriPhoneLWC extends LightningElement {
   @api recordId;
   @wire(getRecord, { recordId: "$recordId", fields })
   account;
+
   @api async invoke() {
-    let phone = getFieldValue(this.account.data, PHONE_FIELD);
-    //handle error
-    let verificationResponse = await verifyPhone({ phone: phone });
-    let valid = verificationResponse.phone_valid;
-    if(valid) {
+    try {
+      let phone = getFieldValue(this.account.data, PHONE_FIELD);
+
+      if (!phone) {
+        throw new Error("Phone number not found on the record.");
+      }
+
+      let verificationResponse = await verifyPhone({ phone: phone });
+
+      if (verificationResponse.phone_valid) {
         let msg =
-            "This is a valid phone number from " + verificationResponse.phone_region + " having " + verificationResponse.carrier + " as carrier.";
-            const evt = new ShowToastEvent({
-                title: "Valid Phone Number",
-                message: msg,
-                variant: "success"
-            });
-            this.dispatchEvent(evt);
-    } else {
-          const evt = new ShowToastEvent({
-            title: "Error",
-            message: "Not a valid phone number !",
-            variant: "error"
-          });
-          this.dispatchEvent(evt);
-        }
+          "This is a valid phone number from " +
+          verificationResponse.phone_region +
+          " having " +
+          verificationResponse.carrier +
+          " as carrier.";
+
+        const evt = new ShowToastEvent({
+          title: "Valid Phone Number",
+          message: msg,
+          variant: "success",
+        });
+        this.dispatchEvent(evt);
+      } else {
+        const evt = new ShowToastEvent({
+          title: "Invalid Phone Number",
+          message: "The phone number is not valid.",
+          variant: "error",
+        });
+        this.dispatchEvent(evt);
+      }
+    } catch (error) {
+      console.error("An error occurred:", error);
+
+      const evt = new ShowToastEvent({
+        title: "Error",
+        message: "An error occurred while verifying the phone number.",
+        variant: "error",
+      });
+      this.dispatchEvent(evt);
+    }
   }
 }
