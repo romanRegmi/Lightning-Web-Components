@@ -13,6 +13,7 @@ export default class VeriPhoneLWC extends LightningElement {
   account;
   @api async invoke() {
     let phone = getFieldValue(this.account.data, PHONE_FIELD);
+    //handle error
     let verificationResponse = await verifyPhone({ phone: phone });
     let valid = verificationResponse.phone_valid;
     if(valid) {
@@ -27,7 +28,7 @@ export default class VeriPhoneLWC extends LightningElement {
     } else {
           const evt = new ShowToastEvent({
             title: "Error",
-            message: "Noa a valid phone number !",
+            message: "Not a valid phone number !",
             variant: "error"
           });
           this.dispatchEvent(evt);
