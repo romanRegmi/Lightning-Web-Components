@@ -1,0 +1,31 @@
+<!-- parentComponent.html -->
+<template>
+    <div class="slds-p-horizontal_small">
+        <strong>Parent to Child | Child to Parent communication</strong>
+    </div>
+    <lightning-card title="Parent Component">
+        <div class="slds-p-horizontal_small" style="border: solid;">
+            <div>
+                Parent :- {dataRecievedFromChild}
+            </div>
+        </div>
+        <div class="slds-p-horizontal_Small" style="border: solid;">
+            <c-child-component onsendevent={receivedEvent}>
+            </c-child-component>
+        </div>
+    </lightning-card>
+</template>
+
+
+<!-- childComponent.html -->
+<template>
+    <lightning-card title="Child Component">
+        <div slot="footer">
+            <lightning-input type="text" placeholder="Enter something" onkeyup={childInputTextHandler}>
+            </lightning-input>
+            <lightning-button variant="brand" label="Send to Parent" onclick={childClickHandler}
+                class="slds-m-left_x-small">
+            </lightning-button>
+        </div>
+    </lightning-card>
+</template>

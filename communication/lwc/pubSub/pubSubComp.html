@@ -1,0 +1,27 @@
+<!-- pubSubCompA.html -->
+<template>
+    <div class="slds-p-horizontal_small">
+        <strong>Independent Component communication using Pub-Sub Model</strong>
+    </div>
+    <lightning-card title="First Component">
+        <div class="slds-p-horizontal_Small">
+            <lightning-input type="text" placeholder="Enter something" onkeyup={inputTextHandler}>
+            </lightning-input>
+            <lightning-button variant="brand" label="Publish" onclick={publishHandler} class="slds-m-left_x-small">
+            </lightning-button>
+        </div>
+    </lightning-card>
+</template>
+
+
+<!-- pubSubCompB.html -->
+<template>
+    <div class="slds-p-horizontal_small">
+        <strong>Independent Component communication using Pub-Sub Model</strong>
+    </div>
+    <lightning-card title="Second Component">
+        <div class="slds-p-horizontal_small">
+            message: - {messageData}
+        </div>
+    </lightning-card>
+</template>

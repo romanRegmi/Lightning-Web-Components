@@ -1,0 +1,24 @@
+<!-- childComponent.html -->
+<template>
+    <lightning-card title="Child Component">
+        <div slot="footer">
+            Child : {showMethod}
+        </div>
+    </lightning-card>
+</template>
+
+
+<!-- parentComponent.html -->
+<template>
+    <div class="slds-p-horizontal_small">
+        <strong>Parent to Child | Child to Parent communication</strong>
+    </div>
+    <lightning-card title="Parent Component">
+        <div class="slds-p-horizontal_small" style="border: solid;">
+            <lightning-button variant="brand" label="Call Child Method" onclick={callChild} class="slds-m-left_x-small">
+            </lightning-button>
+        </div>
+        <!-- Include the child component here -->
+        <c-child-component></c-child-component>
+    </lightning-card>
+</template>
