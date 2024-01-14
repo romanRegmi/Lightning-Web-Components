@@ -1,0 +1,19 @@
+<!-- senderComponent.html -->
+<template>
+    <lightning-card title="Sender Component">
+        <div class="slds-p-around_medium">
+            <lightning-input label="Message" value={message} onchange={handleChange}></lightning-input>
+            <lightning-button label="Send Message" onclick={sendMessage}></lightning-button>
+        </div>
+    </lightning-card>
+</template>
+
+
+<!-- receiverComponent.html -->
+<template>
+    <lightning-card title="Receiver Component">
+        <div class="slds-p-around_medium">
+            <p>{receivedMessage}</p>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,15 @@
+<!-- ParentComponent.html -->
+<template>
+    <c-sibling-component-a ondatachange="{handleDataChange}"></c-sibling-component-a>
+    <c-sibling-component-b data="{sharedData}"></c-sibling-component-b>
+</template>
+
+<!-- SiblingComponentA.html -->
+<template>
+    <input type="text" value="{localData}" onchange="{handleInputChange}">
+</template>
+
+<!-- SiblingComponentB.html -->
+<template>
+    <p>Shared Data: {data}</p>
+</template>
