@@ -1,0 +1,7 @@
+<template>
+    <template for:each={data} for:item="account">
+        <template for:each={account.contacts} for:item="contact">
+            <h3 key={account.Name}>{contact.Name}</h3>
+        </template>
+    </template>
+</template>
