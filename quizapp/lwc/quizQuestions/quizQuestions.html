@@ -1,0 +1,30 @@
+<template>
+    <lightning-modal-header label="Awesome Quiz Application">Score : {score}</lightning-modal-header>
+    <lightning-modal-body>
+        <div>
+            <template lwc:if={isCompleted}>
+                <div class={isScoredFull}>You have scored {score} out of {questions.length}</div>
+            </template>
+            <template lwc:else>
+                <strong>{question.id} - {question.question}</strong>
+                <template for:each={question.options} for:item="option">
+                    <div key={option} class="slds-m-top_x-small">
+                        <lightning-button title={option} label={option} variant='brand-outline' stretch
+                            onclick={handleSelect}></lightning-button>
+                    </div>
+                </template>
+            </template>
+        </div>
+    </lightning-modal-body>
+    <lightning-modal-footer>
+        <template lwc:if={isCompleted}>
+            <lightning-button variant="brand" label="Replay Quiz" onclick={handleReplay} class="slds-m-left_x-small">
+            </lightning-button>
+            <lightning-button variant="destructive-text" label="Quit Quiz" onclick={handleQuit}
+                class="slds-m-left_x-small"></lightning-button>
+        </template>
+        <template lwc:else>
+            <lightning-button variant="brand" label="Next" onclick={handleNext}></lightning-button>
+        </template>
+    </lightning-modal-footer>
+</template>
