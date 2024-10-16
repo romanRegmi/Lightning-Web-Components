@@ -1,0 +1,19 @@
+h1 {
+    font-size: 30px;
+    color: grey;
+
+}
+
+
+/* apply css to child component from the parent component*/
+c-css-child {
+    display : block;
+    background-color: green;
+    color: white;
+}
+
+/* slot element is styled from the parent css */
+p {
+    font-size: 20px;
+    color: yellow;
+}

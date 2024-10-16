@@ -1,0 +1,12 @@
+/* Style the host of this component (itself?)*/
+
+:host {
+    display : block;
+    background-color: red;
+    color: white;
+}
+
+/* target the class blue element */
+:host(.blue) {
+    background-color: blue;
+}

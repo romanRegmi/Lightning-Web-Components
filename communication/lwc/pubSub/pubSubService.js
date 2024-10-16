@@ -22,7 +22,22 @@
 // pubSubService.js
 
 /* eslint-disable no-console */
-const store = {};
+const store = {}; // will store subscribe 
+
+/**
+    subscribe("zeroToHero", function(m){
+        console.log(m)
+    })
+
+    store = {
+        "zeroToHero":function(m){
+            console.log(m)
+        }
+    }
+ */
+
+
+
 /**
  * subscribers a callback for an event
  * @param {string} eventName - Name of the event to listen for.

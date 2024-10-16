@@ -1,0 +1,35 @@
+<template>
+    <div>
+        Child Component
+    </div>
+
+    The slot will show both the html tags passed from the parent component.
+    To prevent this, we will have to use named slots.
+
+    <div>
+        <!-- unnamed slot -->
+        <slot> 
+            <!-- The slot tag will be replaced by the p tag of the parent component -->
+        </slot>
+
+    </div>
+
+    <div>
+        <!-- unnamed slot -->
+        <slot> 
+            <!-- The slot tag will be replaced by the p tag of the parent component -->
+        </slot>
+        
+    </div>
+
+</template>
+
+<template>
+    <div>What is Your Name ?< /div>
+    <div><slot name="first"></slot></div> <!-- named slots -->
+    <div>What is Your Age ?< /div>
+    <div><slot name="second"></slot></div>
+    <footer class="slds-card__footer slds-hide">
+        <slot name="footer" onslotchange={handleFooterChange}></slot>
+    </footer>
+</template>

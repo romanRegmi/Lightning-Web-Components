@@ -1,0 +1,18 @@
+<!-- Whenever lightning-input changes, the progress bar child component should get updated accordingly -->
+
+<template>
+    <lightning-input type="number" label="Enter Percentage"
+    onkeyup={changeHandler}
+    value={percentage}></lightning-input>
+    <c-p2c-progress-component
+    progress-value={percentage}
+    ></c-p2c-progress-component>
+</template>
+
+<!-- Child - Component (p2cProgressComponent)-->
+
+<template>
+    <lightning-progress-bar value={progressValue} size="large">
+
+    </lightning-progress-bar>
+</template>

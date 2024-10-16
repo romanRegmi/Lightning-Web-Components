@@ -23,7 +23,7 @@ export default class ChildComponent extends LightningElement {
   }
  
   childClickHandler() {
-    this.dispatchEvent(new CustomEvent('sendevent', {
+    this.dispatchEvent(new CustomEvent('sendevent', { // CustomEvent has naming validations --> We can't use onclick, onclose etc. 'click' & 'close' must be used.
       detail: this.childInputText
       /* you can place data in form of object also 
            detail: {
