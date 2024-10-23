@@ -7,6 +7,8 @@ export default class Bmi extends LightningElement {
     isBMICalculated = false;
 
     handleCalculate() {
+        // If the templates contains duplicate lwc:ref directives
+        // this.refs refrences the last directive.
         const heightInMeter = this.refs.heightRef.value / 100;
         const weight = this.refs.weightRef.value;
 
