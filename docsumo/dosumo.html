@@ -1,0 +1,14 @@
+<template>
+    <lightning-card title="Content Document Viewer">
+        <div class="slds-p-horizontal_medium">
+            <!-- Data Table to display content documents details -->
+            <lightning-datatable
+                data={contentDocuments}
+                columns={columns}
+                key-field="id"
+                hide-checkbox-column="true"
+                onrowaction={handleRowAction}>
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+</template>
