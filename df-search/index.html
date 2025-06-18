@@ -1,0 +1,27 @@
+<!-- ClientSideSearch.html -->
+<template>
+ <lightning-card>
+  <div class="slds-m-around_medium">
+   <div class="slds-m-bottom_medium slds-list_horizontal slds-grid_align-spread">
+    <h2 class="slds-text-heading_medium">Contacts</h2>
+    <lightning-input
+       type="search"
+       variant="label-hidden"
+       placeholder="Type to search..."
+       onchange={handleSearch}
+       class="slds-size_1-of-3"> <!-- Adjusts width to 1/3rd of available space -->
+    </lightning-input>
+   </div>
+   <!-- To Show Spinner While Data is Loading -->
+   <template if:true={isLoading}>
+    <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+   </template>
+   <lightning-datatable
+        key-field="id"
+        data={filteredData}
+        columns={columns}
+        hide-checkbox-column="true">
+   </lightning-datatable>
+  </div>
+ </lightning-card>
+</template>
