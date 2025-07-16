@@ -1,0 +1,43 @@
+<aura:component implements="lightning:recordHomeTemplate" description="Left/Right Collapsabile sidebars">
+
+<aura:attribute name="leftRegion" type="Aura.Component[]" description="Collapsible Left Sidebar"/>
+<aura:attribute name="main" type="Aura.Component[]" description="Main Region"/>
+<aura:attribute name="rightRegion" type="Aura.Component[]" description="Collapsible Right Sidebar"/>
+
+<aura:attribute name="leftRegionCollapsed" type="Boolean" access="PRIVATE" default="false"/>
+<aura:attribute name="rightRegionCollapsed" type="Boolean" access="PRIVATE" default="false"/>
+
+<div class="slds-grid">
+    <div aura:id="leftRegionDiv" class="slds-size_3-of-12 slds-scrollable sideBar1Height">{!v.leftRegion}</div>
+    <div class="slds-no-flex">
+        <lightning:buttonIcon
+            class="setIconDimension"
+            iconClass="setIconColor"
+            onclick="{!c.toogleLeftSection}"
+            size="medium"
+            variant="border-filled"
+            iconName="{!v.leftRegionCollapsed ? 'utility:chevronright' : 'utility:chevronleft'}"
+            alternativeText="{!v.leftRegionCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}"
+        />
+
+    </div>
+
+    <div aura:id="mainRegionDiv" class="slds-col slds-size_6-of-12 slds-scrollable mainRegionHeight">
+        {!v.main}
+    </div>
+
+    <div class="slds-no-flex">
+        <lightning:buttonIcon
+            class="setIconDimension"
+            iconClass="setIconColor"
+            onclick="{!c.toogleRightSection}"
+            size="medium"
+            variant="border-filled"
+            iconName="{!v.rightRegionCollapsed ? 'utility:chevronleft' : 'utility:chevronright'}"
+            alternativeText="{!v.rightRegionCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}"
+		/>
+    </div>
+    <div aura:id="rightRegionDiv" class="slds-size_3-of-12 slds-scrollable sideBar2Height">{!v.rightRegion}</div>
+</div>
+
+</aura:component>

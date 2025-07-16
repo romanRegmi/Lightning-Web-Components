@@ -1,0 +1,14 @@
+.THIS .hideDisplay {
+    display : none;
+}
+
+.THIS .setIconDimension {
+    width: 10px;
+    height: 100vh;
+    background-color: azure;
+}
+
+.THIS .setIconColor {
+    fill: white;
+    background-color: aqua;
+}

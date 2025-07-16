@@ -1,0 +1,7 @@
+<design:component label="Main Region and Collapsible Sidebars">
+	<flexipage:template>
+        <flexipage:region name="leftRegion" defaultWidth="SMALL" />
+        <flexipage:region name="main" defaultWidth="LARGE" />
+        <flexipage:region name="rightRegion" defaultWidth="SMALL" />
+    </flexipage:template>
+</design:component>
