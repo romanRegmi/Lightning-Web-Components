@@ -1,0 +1,21 @@
+<template>
+    <lightning-card title = "File Upload">
+        <lightning-file-upload>
+            label="Upload File"
+            accept=".csv, .doc, .xls, .pdf"
+            record-id={recordId}
+            onuploadfinished={handleUploadFinished}
+            multiple
+        </lightning-file-upload>
+        <template if:true={uploadFiles}>
+            <p class="slds-m-top_medium">Upload Files:</p>
+            <ul>
+                <template for:each={uploadedFiles} for:item="file">
+                    <li key={file.documentId}>
+                        {file.name}
+                    </li>
+                </template>
+            </ul>
+        </template>
+    </lightning-card>
+</template>
