@@ -2,8 +2,6 @@ import { LightningElement } from 'lwc';
 import quizRules from 'c/quizRules';
 import quizQuestions from 'c/quizQuestions';
 
-
-
 export default class LaunchQuiz extends LightningElement {
     async openQuizModal() {
         const result = await quizQuestions.open({
