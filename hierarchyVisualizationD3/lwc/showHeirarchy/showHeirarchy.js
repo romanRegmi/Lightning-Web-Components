@@ -1,6 +1,5 @@
 // hierarchyTreeChart.js
-import { LightningElement, api, wire } from 'lwc';
-import { getRecord } from 'lightning/uiRecordApi';
+import { LightningElement, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import D3 from '@salesforce/resourceUrl/d3js';
@@ -10,10 +9,10 @@ import getHierarchyData from '@salesforce/apex/HierarchyController.getHierarchyD
 export default class ShowHeirarchy extends LightningElement {
     @api recordId;
     @api objectApiName;
-    @api maxLevels = 5;
     @api width = 960;
     @api height = 600;
     @api nodeRadius = 10;
+    @api maxLevels = 5;
 
     hierarchyData = null;
     isLoading = true;
@@ -23,16 +22,6 @@ export default class ShowHeirarchy extends LightningElement {
     svg = null;
     treeLayout = null;
     root = null;
-
-    // Wire to get current record details
-    @wire(getRecord, { recordId: '$recordId', fields: [] })
-    wiredRecord({ error, data }) {
-        if (data) {
-            this.loadHierarchyData();
-        } else if (error) {
-            this.handleError('Error loading record: ' + error.body.message);
-        }
-    }
 
     async connectedCallback() {
         try {
@@ -62,7 +51,7 @@ export default class ShowHeirarchy extends LightningElement {
         try {
             const result = await getHierarchyData({
                 recordId: this.recordId,
-                objectApiName: this.objectApiName,
+                currObj: this.objectApiName,
                 maxLevels: this.maxLevels
             });
 
@@ -201,7 +190,7 @@ export default class ShowHeirarchy extends LightningElement {
                     return d.children || d._children ? 'end' : 'start';
                 }
             })
-            .text(d => d.data.objectType || '')
+            .text(d => d.data.currObj || '')
             .style('fill', d => d.depth === 0 ? '#0176d3' : '#666')
             .style('font-size', d => d.depth === 0 ? '12px' : '10px')
             .style('font-family', 'Salesforce Sans, Arial, sans-serif')
@@ -408,7 +397,7 @@ export default class ShowHeirarchy extends LightningElement {
             detail: {
                 nodeId: nodeData.id,
                 nodeName: nodeData.name,
-                objectType: nodeData.objectType,
+                currObj: nodeData.currObj,
                 data: nodeData.data
             }
         });

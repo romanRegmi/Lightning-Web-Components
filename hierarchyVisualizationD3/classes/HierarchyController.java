@@ -1,24 +1,34 @@
 // HierarchyController.cls
 public with sharing class HierarchyController {
-    public static String objName;
-    
+    private static Integer maxLevel;
+
+    // API Name of the field value you want to show in the node for each object
+    private static final Map<String, String> NAME_FIELD_MAP = new Map<String, String>{
+        'Account' => 'Name',
+        'Contact' => 'Name',
+        'Opportunity' => 'Name',
+        'Case' => 'Subject',
+        'CaseComment' => 'ParentId'
+    };
+
     @AuraEnabled
-    public static HierarchyNode getHierarchyData(String recordId, String objectApiName, Integer maxLevels) {
+    public static HierarchyNode getHierarchyData(String recordId, String currObj, Integer maxLevels) {
         try {
-            if (String.isBlank(recordId) || maxLevels <= 0) {
+            if (String.isBlank(recordId) || String.isBlank(currObj) || maxLevels <= 0) {
                 throw new AuraHandledException('Invalid parameters provided');
             }
+            
+            maxLevel = maxLevels;
                         
             // Get the root record
-            SObject rootRecord = getRootRecord(recordId, objectApiName);
+            SObject rootRecord = getRootRecord(recordId, currObj);
             if (rootRecord == null) {
                 throw new AuraHandledException('Record not found');
             }
 
-            objName = objectApiName;            
-            
             // Build hierarchy starting from root
-            HierarchyNode rootNode = buildHierarchyNode(rootRecord, objectApiName, 0, maxLevels, new Set<String>());
+            HierarchyNode rootNode = buildHierarchyNode(rootRecord, currObj, 0, new Set<String>());
+            System.debug('rootNode ' + rootNode);
             return rootNode;
             
         } catch (Exception e) {
@@ -27,17 +37,13 @@ public with sharing class HierarchyController {
         }
     }
     
-    private static SObject getRootRecord(String recordId, String objectApiName) {    
-        try {
-            return Database.query('SELECT Id, Name FROM ' + String.escapeSingleQuotes(objectApiName) + ' WHERE Id = :recordId LIMIT 1');
-        } catch (Exception e) {
-            System.debug('Error in getRootRecord: ' + e.getMessage());
-            return null;
-        }
+    private static SObject getRootRecord(String recordId, String currObj) {
+        return Database.query('SELECT Id, Name FROM ' + String.escapeSingleQuotes(currObj) + ' WHERE Id = :recordId LIMIT 1');
     }
     
-    private static HierarchyNode buildHierarchyNode(SObject record, String objectType, Integer currentLevel, Integer maxLevels, Set<String> processedRecords) {
+    private static HierarchyNode buildHierarchyNode(SObject record, String currObj, Integer currentLevel, Set<String> processedRecords) {
         // Prevent infinite loops
+        try{
         if (processedRecords.contains(record.Id)) {
             return null;
         }
@@ -45,8 +51,8 @@ public with sharing class HierarchyController {
         
         HierarchyNode node = new HierarchyNode();
         node.id = record.Id;
-        node.name = getRecordName(record);
-        node.objectType = objectType;
+        node.name =  NAME_FIELD_MAP.get(currObj) != null ? String.valueOf(record.get(NAME_FIELD_MAP.get(currObj))) : null;
+        node.currObj = currObj;
         node.level = currentLevel;
         node.children = new List<HierarchyNode>();
         
@@ -58,33 +64,19 @@ public with sharing class HierarchyController {
         }
         
         // If we haven't reached max levels, get children
-        if (currentLevel < maxLevels) {
-            List<HierarchyNode> childNodes = getChildRecords(record.Id, objectType, currentLevel + 1, maxLevels, processedRecords);
+        if (currentLevel < maxLevel) {
+            List<HierarchyNode> childNodes = getChildRecords(record.Id, currObj, currentLevel + 1, processedRecords);
             node.children.addAll(childNodes);
         }
-        
+        System.debug('NODE ' + node.currObj);
         return node;
-    }
-    
-    private static String getRecordName(SObject record) {
-        // Map object API name to the field used as Name
-        Map<String, String> mapRecordName = new Map<String, String>{
-            'Account' => 'Name', 
-            'Contact' => 'Name',
-            'Opportunity' => 'Name',
-            'Lead' => 'Name'
-        };
-        
-        // Get the field name from the map, default to 'Name' if not found
-        String nameField = mapRecordName.get(objName);
-        if (nameField != null && record.get(nameField) != null) {
-            return String.valueOf(record.get(nameField));
+        } catch (Exception e){
+            System.debug('Error in buildHierarchyNode: ' + e.getMessage());
+            return null;
         }
-        
-        return null;
     }
     
-    private static List<HierarchyNode> getChildRecords(String parentId, String parentObjectType, Integer currentLevel, Integer maxLevels, Set<String> processedRecords) {
+    private static List<HierarchyNode> getChildRecords(String parentId, String parentObjectType, Integer currentLevel, Set<String> processedRecords) {
         List<HierarchyNode> childNodes = new List<HierarchyNode>();
         
         // Define relationship mappings - customize these based on your org's structure
@@ -93,7 +85,7 @@ public with sharing class HierarchyController {
         if (relationshipMap.containsKey(parentObjectType)) {
             for (ChildRelationship relationship : relationshipMap.get(parentObjectType)) {
                 List<HierarchyNode> relationshipChildren = getChildrenForRelationship(
-                    parentId, relationship, currentLevel, maxLevels, processedRecords
+                    parentId, relationship, currentLevel, processedRecords
                 );
                 childNodes.addAll(relationshipChildren);
             }
@@ -102,43 +94,27 @@ public with sharing class HierarchyController {
         return childNodes;
     }
     
-    private static List<HierarchyNode> getChildrenForRelationship(String parentId, ChildRelationship relationship, Integer currentLevel, Integer maxLevels, Set<String> processedRecords) {
+    private static List<HierarchyNode> getChildrenForRelationship(String parentId, ChildRelationship relationship, Integer currentLevel, Set<String> processedRecords) {
         List<HierarchyNode> children = new List<HierarchyNode>();
         
         try {
             // Build dynamic query for child records
             List<String> queryFields = new List<String>{'Id'};
-            
-            // Get object metadata for child object
-            Schema.SObjectType childSObjectType = Schema.getGlobalDescribe().get(relationship.childObjectName);
-            if (childSObjectType != null) {
-                Schema.DescribeSObjectResult childObjectDescribe = childSObjectType.getDescribe();
-                Map<String, Schema.SObjectField> fieldMap = childObjectDescribe.fields.getMap();
-                
-                // Add common fields if they exist
-                List<String> commonFields = new List<String>{
-                    'Name', 'Title', 'Subject', 'CaseNumber', 'AccountNumber', 
-                    'Description', 'Status', 'Stage', 'Type'
-                };
-                
-                for (String fieldName : commonFields) {
-                    if (fieldMap.containsKey(fieldName.toLowerCase())) {
-                        queryFields.add(fieldName);
-                    }
-                }
+            if(!String.isBlank(NAME_FIELD_MAP.get(relationship.childObjectName))){
+                queryFields.add(NAME_FIELD_MAP.get(relationship.childObjectName));
             }
             
             String query = 'SELECT ' + String.join(queryFields, ', ') + 
                           ' FROM ' + String.escapeSingleQuotes(relationship.childObjectName) + 
                           ' WHERE ' + String.escapeSingleQuotes(relationship.relationshipField) + ' = :parentId' +
-                          ' ORDER BY CreatedDate DESC LIMIT 50'; // Limit to prevent too many records
+                          ' ORDER BY CreatedDate DESC'; // Limit to prevent too many records
             
             List<SObject> childRecords = Database.query(query);
             
             for (SObject childRecord : childRecords) {
                 if (!processedRecords.contains(childRecord.Id)) {
                     HierarchyNode childNode = buildHierarchyNode(
-                        childRecord, relationship.childObjectName, currentLevel, maxLevels, processedRecords
+                        childRecord, relationship.childObjectName, currentLevel, processedRecords
                     );
                     if (childNode != null) {
                         children.add(childNode);
@@ -162,29 +138,22 @@ public with sharing class HierarchyController {
             new ChildRelationship('Contact', 'AccountId'),
             new ChildRelationship('Opportunity', 'AccountId'),
             new ChildRelationship('Case', 'AccountId'),
-            new ChildRelationship('Account', 'ParentId') // Child Accounts
+            new ChildRelationship('Account', 'ParentId') // Self relationship isn't supported
         });
         
         // Contact relationships
         relationshipMap.put('Contact', new List<ChildRelationship>{
-            new ChildRelationship('Case', 'ContactId'),
-            new ChildRelationship('Opportunity', 'Contact__c'), // If you have custom contact field
-            new ChildRelationship('Task', 'WhoId'),
-            new ChildRelationship('Event', 'WhoId')
+            new ChildRelationship('Case', 'ContactId')
         });
         
         // Opportunity relationships
         relationshipMap.put('Opportunity', new List<ChildRelationship>{
-            new ChildRelationship('OpportunityLineItem', 'OpportunityId'),
-            new ChildRelationship('Task', 'WhatId'),
-            new ChildRelationship('Event', 'WhatId')
+            new ChildRelationship('OpportunityLineItem', 'OpportunityId')
         });
         
         // Case relationships
         relationshipMap.put('Case', new List<ChildRelationship>{
             new ChildRelationship('Case', 'ParentId'), // Child Cases
-            new ChildRelationship('Task', 'WhatId'),
-            new ChildRelationship('Event', 'WhatId'),
             new ChildRelationship('CaseComment', 'ParentId')
         });
         
@@ -197,7 +166,7 @@ public with sharing class HierarchyController {
     public class HierarchyNode {
         @AuraEnabled public String id { get; set; }
         @AuraEnabled public String name { get; set; }
-        @AuraEnabled public String objectType { get; set; }
+        @AuraEnabled public String currObj { get; set; }
         @AuraEnabled public Integer level { get; set; }
         @AuraEnabled public List<HierarchyNode> children { get; set; }
         @AuraEnabled public Map<String, Object> data { get; set; }
