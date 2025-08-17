@@ -180,7 +180,7 @@ export default class ShowHeirarchy extends LightningElement {
                 }
             })
             .text(d => {
-                const name = this.getNodeLabel(d.data);
+                const name = d.data.name;
                 // Truncate very long names but show more characters for root node
                 const maxLength = d.depth === 0 ? 25 : 20;
                 return name.length > maxLength ? name.substring(0, maxLength) + '...' : name;
@@ -323,11 +323,6 @@ export default class ShowHeirarchy extends LightningElement {
             d._children = null;
         }
         this.update(d, g);
-    }
-
-    getNodeLabel(data) {
-        // Customize this based on your data structure
-        return data.name;
     }
 
     refreshChart() {
