@@ -390,7 +390,7 @@ export default class ShowHeirarchy extends LightningElement {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `hierarchy-${this.recordId}-${new Date().getTime()}.svg`;
+            a.download = `Hierarchy-${this.objectLabel}-${this.record}.svg`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
