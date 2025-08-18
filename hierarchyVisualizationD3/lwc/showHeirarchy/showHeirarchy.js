@@ -1,8 +1,9 @@
 // hierarchyTreeChart.js
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import D3 from '@salesforce/resourceUrl/d3js';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import getHierarchyData from '@salesforce/apex/HierarchyController.getHierarchyData';
 
 export default class ShowHeirarchy extends LightningElement {
@@ -13,15 +14,28 @@ export default class ShowHeirarchy extends LightningElement {
     @api nodeRadius;
     @api maxLevels;
 
+
     hierarchyData = null;
     processedHierarchyData = null;
     isLoading = true;
     error = null;
+    record;
 
     d3Initialized = false;
     svg = null;
     treeLayout = null;
     root = null;
+
+    objectLabel;
+
+    @wire(getObjectInfo, { objectApiName: '$objectApiName' })
+    wiredObjectInfo({ error, data }) {
+        if (data) {
+            this.objectLabel = data.label;
+        } else if (error) {
+            console.error('Error retrieving object info:', error);
+        }
+    }
 
     async connectedCallback() {
         try {
@@ -111,6 +125,7 @@ export default class ShowHeirarchy extends LightningElement {
 
         // Collapse all nodes initially except root
         try {
+            this.record = this.root.data.name;
             this.root.children.forEach(this.collapse);
         } catch {
             // Skip if the record has no child records
@@ -204,22 +219,17 @@ export default class ShowHeirarchy extends LightningElement {
                 this.handleTextClick(d);
             });
 
-        // Transition nodes to their new position
         const nodeUpdate = nodeEnter.merge(node);
 
-        nodeUpdate.transition()
-            .duration(750)
+        nodeUpdate
             .attr('transform', d => `translate(${d.y},${d.x})`);
 
         nodeUpdate.select('circle')
             .attr('r', this.nodeRadius)
             .style('fill', d => this.getNodeColor(d))
-            .transition()
-            .duration(750);
+
 
         nodeUpdate.select('text.node-text')
-            .transition()
-            .duration(750)
             .attr('x', d => {
                 if (d.depth === 0) {
                     return 15;
@@ -237,8 +247,6 @@ export default class ShowHeirarchy extends LightningElement {
             .style('fill-opacity', 1);
 
         nodeUpdate.select('text.node-type')
-            .transition()
-            .duration(750)
             .attr('x', d => {
                 if (d.depth === 0) {
                     return 15;
@@ -256,8 +264,7 @@ export default class ShowHeirarchy extends LightningElement {
             .style('fill-opacity', 1);
 
         // Remove exiting nodes
-        const nodeExit = node.exit().transition()
-            .duration(750)
+        const nodeExit = node.exit()
             .attr('transform', d => `translate(${source.y},${source.x})`)
             .remove();
 
@@ -287,31 +294,16 @@ export default class ShowHeirarchy extends LightningElement {
 
         // Only animate links that are actually changing
         linkUpdate
-            .filter(d => {
-                // Animate links that connect to the clicked node or are descendants of it
-                return d === source || d.parent === source || this.isDescendantOf(d, source);
-            })
-            .transition()
-            .duration(750)
-            .attr('d', d => this.diagonal(d, d.parent));
-
-        // For links that aren't changing, update immediately without animation
-        linkUpdate
-            .filter(d => {
-                return d !== source && d.parent !== source && !this.isDescendantOf(d, source);
-            })
             .attr('d', d => this.diagonal(d, d.parent));
 
         // Remove exiting links
-        link.exit().transition()
-                    .duration(750)
-                    .attr('d', d => {
-                        const o = { x: source.x, y: source.y };
-                        return this.diagonal(o, o);
-                    })
-                    .remove();
+        link.exit()
+            .attr('d', d => {
+                const o = { x: source.x, y: source.y };
+                return this.diagonal(o, o);
+            })
+            .remove();
 
-        // Store the old positions for transition
         nodes.forEach(d => {
             d.x0 = d.x;
             d.y0 = d.y;
@@ -332,10 +324,13 @@ export default class ShowHeirarchy extends LightningElement {
 
     // Get node color based on type and state
     getNodeColor(d) {
-        if (d.data.isObjectGroup) {
-            return d._children ? '#9c88ff' : '#b19cd9'; // Purple for object groups
+        if(d.depth === 0){
+            return '#FFD700';
         }
-        return d._children ? '#ff6b6b' : '#4ecdc4'; // Original colors for records
+        if (d.data.isObjectGroup) {
+            return '#9c88ff';
+        }
+        return d._children ? '#ff6b6b' : '#4ecdc4';
     }
 
     // Handle text click for navigation
@@ -354,14 +349,6 @@ export default class ShowHeirarchy extends LightningElement {
     }
 
     click(event, d, g) {
-        // Check if node has children or collapsed children
-        const hasChildren = d.children || d._children;
-
-        if (!hasChildren) {
-            // Leaf node - don't perform transition animation
-            return;
-        }
-
         if (d.children) {
             d._children = d.children;
             d.children = null;

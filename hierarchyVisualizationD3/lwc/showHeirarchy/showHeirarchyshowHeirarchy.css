@@ -37,6 +37,10 @@
     background-color: #ff6b6b;
 }
 
+.legend-circle--object {
+    background-color: #9c88ff;
+}
+
 .legend-circle--leaf {
     background-color: #4ecdc4;
 }
