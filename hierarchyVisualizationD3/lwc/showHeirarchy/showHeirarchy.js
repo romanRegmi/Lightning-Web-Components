@@ -14,6 +14,7 @@ export default class ShowHeirarchy extends LightningElement {
     @api maxLevels;
 
     hierarchyData = null;
+    processedHierarchyData = null;
     isLoading = true;
     error = null;
 
@@ -54,6 +55,7 @@ export default class ShowHeirarchy extends LightningElement {
                 maxLevels: this.maxLevels
             });
             this.hierarchyData = result;
+            // No need to process data - Apex now handles the object grouping
         } catch (error) {
             console.error(error.message);
         } finally {
@@ -75,32 +77,54 @@ export default class ShowHeirarchy extends LightningElement {
         // Clear previous chart
         container.innerHTML = '';
 
+        // Calculate dynamic height based on number of nodes
+        const totalNodes = this.countTotalNodes(this.hierarchyData);
+        const minNodeSpacing = 10; // Minimum vertical spacing between nodes
+        const dynamicHeight = Math.max(this.height, totalNodes * minNodeSpacing);
+
         // Set up dimensions and margins
         const margin = { top: 20, right: 90, bottom: 30, left: 50 };
         const width = this.width - margin.left - margin.right;
-        const height = this.height - margin.top - margin.bottom;
+        const height = dynamicHeight - margin.top - margin.bottom;
 
-        // Create SVG
+        // Create SVG with zoom and pan functionality
         this.svg = d3.select(container)
             .append('svg')
             .attr('width', this.width)
-            .attr('height', this.height);
+            .attr('height', this.height) // Keep original viewport height
+            .call(d3.zoom()
+                .scaleExtent([0.1, 3])
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                }));
 
         const g = this.svg.append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Create tree layout
+        // Create tree layout with dynamic sizing
         this.treeLayout = d3.tree().size([height, width]);
 
         // Convert hierarchy data to d3 hierarchy
         this.root = d3.hierarchy(this.hierarchyData, d => d.children);
-        this.root.x0 = height / 2;
+        this.root.x0 = this.height / 2;
         this.root.y0 = 0;
 
         // Collapse all nodes initially except root
         this.root.children.forEach(this.collapse);
 
         this.update(this.root, g);
+    }
+
+    // Helper method to count total visible nodes
+    countTotalNodes(node) {
+        if (!node) return 0;
+        let count = 1;
+        if (node.children) {
+            node.children.forEach(child => {
+                count += this.countTotalNodes(child);
+            });
+        }
+        return count;
     }
 
     collapse = (d) => {
@@ -134,34 +158,7 @@ export default class ShowHeirarchy extends LightningElement {
         // Add circles for nodes
         nodeEnter.append('circle')
             .attr('r', 1e-6)
-            .style('fill', d => d._children ? '#ff6b6b' : '#4ecdc4')
-            .style('stroke', '#333')
-            .style('stroke-width', '2px')
-            .style('cursor', 'pointer');
-
-        // Add object type badge
-        nodeEnter.append('text')
-            .attr('class', d => d.depth === 0 ? 'node-type root-node' : 'node-type')
-            .attr('dy', '1.5em')
-            .attr('x', d => {
-                if (d.depth === 0) {
-                    return 15;
-                } else {
-                    return d.children || d._children ? -15 : 15;
-                }
-            })
-            .text(d => d.data.currObj || '')
-            .style('fill', d => d.depth === 0 ? '#0176d3' : '#666')
-            .style('font-size', d => d.depth === 0 ? '12px' : '10px')
-            .style('font-family', 'Salesforce Sans, Arial, sans-serif')
-            .style('font-weight', d => d.depth === 0 ? '500' : 'normal')
-            .style('transform', d => d.depth === 0 ? 'rotate(270deg)' : '')
-            .style('fill-opacity', 1e-6);
-
-        // Add circles for nodes
-        nodeEnter.append('circle')
-            .attr('r', 1e-6)
-            .style('fill', d =>  d._children ? '#ff6b6b' : '#4ecdc4')
+            .style('fill', d => this.getNodeColor(d))
             .style('stroke', '#333')
             .style('stroke-width', '2px')
             .style('cursor', 'pointer');
@@ -172,16 +169,13 @@ export default class ShowHeirarchy extends LightningElement {
             .attr('dy', '.35em')
             .attr('x', d => {
                 if (d.depth === 0) {
-                    // Root node: always place text to the right
                     return 15;
                 } else {
-                    // Other nodes: left for parent nodes, right for leaf nodes
                     return d.children || d._children ? -15 : 15;
                 }
             })
             .text(d => {
                 const name = d.data.name;
-                // Truncate very long names but show more characters for root node
                 const maxLength = d.depth === 0 ? 25 : 20;
                 return name.length > maxLength ? name.substring(0, maxLength) + '...' : name;
             })
@@ -191,18 +185,18 @@ export default class ShowHeirarchy extends LightningElement {
             .style('font-weight', d => d.depth === 0 ? '600' : '500')
             .style('transform', d => d.depth === 0 ? 'rotate(270deg)' : '')
             .style('cursor', 'pointer')
-            .on('mouseover', function (event, d) {
-                d3.select(this).style('fill', 'blue');
+            .on('mouseover', (event, d) => {
+                //
             })
-            .on('mouseout', function (event, d) {
-                d3.select(this).style('fill', null);
+            .on('mousemove', (event, d) => {
+                //
             })
-            .on('click', function (e, d) {
-                event.stopPropagation(); // Prevent event bubbling
-                if (d.depth === 0) {
-                    return;
-                }
-                window.location.href = `/${d.data.id}`;
+            .on('mouseout', (event, d) => {
+                //
+            })
+            .on('click', (event, d) => {
+                event.stopPropagation();
+                this.handleTextClick(d);
             });
 
         // Transition nodes to their new position
@@ -214,8 +208,7 @@ export default class ShowHeirarchy extends LightningElement {
 
         nodeUpdate.select('circle')
             .attr('r', this.nodeRadius)
-            .style('fill', d =>  d._children ? '#ff6b6b' : '#4ecdc4')
-            .filter(d => d._children) // Only transition nodes with children
+            .style('fill', d => this.getNodeColor(d))
             .transition()
             .duration(750);
 
@@ -307,6 +300,22 @@ export default class ShowHeirarchy extends LightningElement {
         });
     }
 
+    // Get node color based on type and state
+    getNodeColor(d) {
+        if (d.data.isObjectGroup) {
+            return d._children ? '#9c88ff' : '#b19cd9'; // Purple for object groups
+        }
+        return d._children ? '#ff6b6b' : '#4ecdc4'; // Original colors for records
+    }
+
+    // Handle text click for navigation
+    handleTextClick(d) {
+        if (d.depth === 0 || d.data.isObjectGroup) {
+            return; // Don't navigate for root node or object groups
+        }
+        window.location.href = `/${d.data.id}`;
+    }
+
     diagonal(s, d) {
         return `M ${s.y} ${s.x}
                 C ${(s.y + d.y) / 2} ${s.x},
@@ -315,6 +324,14 @@ export default class ShowHeirarchy extends LightningElement {
     }
 
     click(event, d, g) {
+        // Check if node has children or collapsed children
+        const hasChildren = d.children || d._children;
+        
+        if (!hasChildren) {
+            // Leaf node - don't perform transition animation
+            return;
+        }
+
         if (d.children) {
             d._children = d.children;
             d.children = null;
@@ -345,7 +362,7 @@ export default class ShowHeirarchy extends LightningElement {
 
     // Additional methods for the component
     get chartContainerStyle() {
-        return `min-height: ${this.height}px; width: 100%;`;
+        return `min-height: ${this.height}px; width: 100%; position: relative;`;
     }
 
     handleExport() {

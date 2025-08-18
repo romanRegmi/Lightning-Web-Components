@@ -26,13 +26,11 @@ public with sharing class HierarchyController {
                 throw new AuraHandledException('Record not found');
             }
 
-            // Build hierarchy starting from root
-            HierarchyNode rootNode = buildHierarchyNode(rootRecord, currObj, 0, new Set<String>());
-            System.debug('rootNode ' + rootNode);
+            // Build hierarchy starting from root with object grouping enabled
+            HierarchyNode rootNode = buildHierarchyNode(rootRecord, currObj, 0, new Set<String>(), true);            
             return rootNode;
             
         } catch (Exception e) {
-            System.debug('Error in getHierarchyData: ' + e.getMessage());
             throw new AuraHandledException('Error retrieving hierarchy data: ' + e.getMessage());
         }
     }
@@ -41,45 +39,120 @@ public with sharing class HierarchyController {
         return Database.query('SELECT Id, Name FROM ' + String.escapeSingleQuotes(currObj) + ' WHERE Id = :recordId LIMIT 1');
     }
     
-    private static HierarchyNode buildHierarchyNode(SObject record, String currObj, Integer currentLevel, Set<String> processedRecords) {
+    private static HierarchyNode buildHierarchyNode(SObject record, String currObj, Integer currentLevel, Set<String> processedRecords, Boolean isRoot) {
         // Prevent infinite loops
-        try{
-        if (processedRecords.contains(record.Id)) {
-            return null;
-        }
-        processedRecords.add(record.Id);
-        
-        HierarchyNode node = new HierarchyNode();
-        node.id = record.Id;
-        node.name =  NAME_FIELD_MAP.get(currObj) != null ? String.valueOf(record.get(NAME_FIELD_MAP.get(currObj))) : null;
-        node.currObj = currObj;
-        node.level = currentLevel;
-        node.children = new List<HierarchyNode>();
-        
-        // Add additional data
-        node.data = new Map<String, Object>();
-        Map<String, Object> recordMap = record.getPopulatedFieldsAsMap();
-        for (String fieldName : recordMap.keySet()) {
-            node.data.put(fieldName, recordMap.get(fieldName));
-        }
-        
-        // If we haven't reached max levels, get children
-        if (currentLevel < maxLevel) {
-            List<HierarchyNode> childNodes = getChildRecords(record.Id, currObj, currentLevel + 1, processedRecords);
-            node.children.addAll(childNodes);
-        }
-        System.debug('NODE ' + node.currObj);
-        return node;
-        } catch (Exception e){
+        try {
+            if (processedRecords.contains(record.Id)) {
+                return null;
+            }
+            processedRecords.add(record.Id);
+            
+            HierarchyNode node = new HierarchyNode();
+            node.id = record.Id;
+            node.name = NAME_FIELD_MAP.get(currObj) != null ? String.valueOf(record.get(NAME_FIELD_MAP.get(currObj))) : null;
+            node.currObj = currObj;
+            node.children = new List<HierarchyNode>();
+            
+            // If we haven't reached max levels, get children
+            if (currentLevel < maxLevel) {
+                // Always group children by object type (not just for root)
+                List<HierarchyNode> groupedChildren = getGroupedChildRecords(record.Id, currObj, currentLevel + 1, processedRecords);
+                node.children.addAll(groupedChildren);
+            }
+            return node;
+        } catch (Exception e) {
             System.debug('Error in buildHierarchyNode: ' + e.getMessage());
             return null;
         }
     }
     
-    private static List<HierarchyNode> getChildRecords(String parentId, String parentObjectType, Integer currentLevel, Set<String> processedRecords) {
+    // Group children by object type (used at all levels)
+    private static List<HierarchyNode> getGroupedChildRecords(String parentId, String parentObjectType, Integer currentLevel, Set<String> processedRecords) {
+        List<HierarchyNode> groupedNodes = new List<HierarchyNode>();
+        
+        // Get all child records first
+        Map<String, List<SObject>> childRecordsByObjectType = getChildRecordsByObjectType(parentId, parentObjectType);
+        
+        // Create object group nodes for each object type that has records
+        for (String objectType : childRecordsByObjectType.keySet()) {
+            List<SObject> objectRecords = childRecordsByObjectType.get(objectType);
+            
+            if (!objectRecords.isEmpty()) {
+                // Create object group node
+                HierarchyNode objectGroupNode = new HierarchyNode();
+                objectGroupNode.id = parentId + '_' + objectType;
+                objectGroupNode.name = objectType;
+                objectGroupNode.currObj = objectType;
+                objectGroupNode.isObjectGroup = true;
+                objectGroupNode.children = new List<HierarchyNode>();
+                
+                // Add individual records as children of the object group
+                for (SObject childRecord : objectRecords) {
+                    if (!processedRecords.contains(childRecord.Id)) {
+                        // Recursively build child nodes (they will also group their children)
+                        HierarchyNode childNode = buildHierarchyNode(
+                            childRecord, objectType, currentLevel, processedRecords, false
+                        );
+                        if (childNode != null) {
+                            objectGroupNode.children.add(childNode);
+                        }
+                    }
+                }
+                
+                // Only add object group if it has children
+                if (!objectGroupNode.children.isEmpty()) {
+                    groupedNodes.add(objectGroupNode);
+                }
+            }
+        }
+        
+        return groupedNodes;
+    }
+    
+    // New method to get child records grouped by object type
+    private static Map<String, List<SObject>> getChildRecordsByObjectType(String parentId, String parentObjectType) {
+        Map<String, List<SObject>> childRecordsByType = new Map<String, List<SObject>>();
+        
+        // Define relationship mappings
+        Map<String, List<ChildRelationship>> relationshipMap = getRelationshipMappings();
+        
+        if (relationshipMap.containsKey(parentObjectType)) {
+            for (ChildRelationship relationship : relationshipMap.get(parentObjectType)) {
+                try {
+                    // Build dynamic query for child records
+                    List<String> queryFields = new List<String>{'Id'};
+                    if (!String.isBlank(NAME_FIELD_MAP.get(relationship.childObjectName))) {
+                        queryFields.add(NAME_FIELD_MAP.get(relationship.childObjectName));
+                    }
+                    
+                    String query = 'SELECT ' + String.join(queryFields, ', ') + 
+                                  ' FROM ' + String.escapeSingleQuotes(relationship.childObjectName) + 
+                                  ' WHERE ' + String.escapeSingleQuotes(relationship.relationshipField) + ' = :parentId' +
+                                  ' ORDER BY CreatedDate DESC';
+                    
+                    List<SObject> childRecords = Database.query(query);
+                    
+                    if (!childRecords.isEmpty()) {
+                        if (!childRecordsByType.containsKey(relationship.childObjectName)) {
+                            childRecordsByType.put(relationship.childObjectName, new List<SObject>());
+                        }
+                        childRecordsByType.get(relationship.childObjectName).addAll(childRecords);
+                    }
+                    
+                } catch (Exception e) {
+                    System.debug('Error querying child records for relationship ' + relationship.childObjectName + ': ' + e.getMessage());
+                }
+            }
+        }
+        
+        return childRecordsByType;
+    }
+    
+    // Modified original method to support non-grouped children
+    private static List<HierarchyNode> getChildRecords(String parentId, String parentObjectType, Integer currentLevel, Set<String> processedRecords, Boolean isRoot) {
         List<HierarchyNode> childNodes = new List<HierarchyNode>();
         
-        // Define relationship mappings - customize these based on your org's structure
+        // Define relationship mappings
         Map<String, List<ChildRelationship>> relationshipMap = getRelationshipMappings();
         
         if (relationshipMap.containsKey(parentObjectType)) {
@@ -100,21 +173,21 @@ public with sharing class HierarchyController {
         try {
             // Build dynamic query for child records
             List<String> queryFields = new List<String>{'Id'};
-            if(!String.isBlank(NAME_FIELD_MAP.get(relationship.childObjectName))){
+            if (!String.isBlank(NAME_FIELD_MAP.get(relationship.childObjectName))) {
                 queryFields.add(NAME_FIELD_MAP.get(relationship.childObjectName));
             }
             
             String query = 'SELECT ' + String.join(queryFields, ', ') + 
                           ' FROM ' + String.escapeSingleQuotes(relationship.childObjectName) + 
                           ' WHERE ' + String.escapeSingleQuotes(relationship.relationshipField) + ' = :parentId' +
-                          ' ORDER BY CreatedDate DESC'; // Limit to prevent too many records
+                          ' ORDER BY CreatedDate DESC';
             
             List<SObject> childRecords = Database.query(query);
             
             for (SObject childRecord : childRecords) {
                 if (!processedRecords.contains(childRecord.Id)) {
                     HierarchyNode childNode = buildHierarchyNode(
-                        childRecord, relationship.childObjectName, currentLevel, processedRecords
+                        childRecord, relationship.childObjectName, currentLevel, processedRecords, false
                     );
                     if (childNode != null) {
                         children.add(childNode);
@@ -138,7 +211,7 @@ public with sharing class HierarchyController {
             new ChildRelationship('Contact', 'AccountId'),
             new ChildRelationship('Opportunity', 'AccountId'),
             new ChildRelationship('Case', 'AccountId'),
-            new ChildRelationship('Account', 'ParentId') // Self relationship isn't supported
+            new ChildRelationship('Account', 'ParentId') // Self relationship
         });
         
         // Contact relationships
@@ -162,18 +235,17 @@ public with sharing class HierarchyController {
         return relationshipMap;
     }
     
-    // Wrapper classes
+    // Enhanced wrapper class
     public class HierarchyNode {
         @AuraEnabled public String id { get; set; }
         @AuraEnabled public String name { get; set; }
         @AuraEnabled public String currObj { get; set; }
-        @AuraEnabled public Integer level { get; set; }
+        @AuraEnabled public Boolean isObjectGroup { get; set; }
         @AuraEnabled public List<HierarchyNode> children { get; set; }
-        @AuraEnabled public Map<String, Object> data { get; set; }
         
         public HierarchyNode() {
             this.children = new List<HierarchyNode>();
-            this.data = new Map<String, Object>();
+            this.isObjectGroup = false;
         }
     }
     
