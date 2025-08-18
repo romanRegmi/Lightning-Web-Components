@@ -110,7 +110,12 @@ export default class ShowHeirarchy extends LightningElement {
         this.root.y0 = 0;
 
         // Collapse all nodes initially except root
-        this.root.children.forEach(this.collapse);
+        try {
+            this.root.children.forEach(this.collapse);
+        } catch {
+            // Skip if the record has no child records
+        }
+
 
         this.update(this.root, g);
     }
@@ -262,11 +267,11 @@ export default class ShowHeirarchy extends LightningElement {
         nodeExit.select('text')
             .style('fill-opacity', 1e-6);
 
-        // Update links
+        // Update links - FIXED VERSION
         const link = g.selectAll('path.link')
-            .data(links, d => d.id);
+            .data(links, d => d.data.id);
 
-        // Enter new links
+        // Enter new links (only for newly visible branches)
         const linkEnter = link.enter().insert('path', 'g')
             .attr('class', 'link')
             .style('fill', 'none')
@@ -277,27 +282,52 @@ export default class ShowHeirarchy extends LightningElement {
                 return this.diagonal(o, o);
             });
 
-        // Transition links to their new position
+        // Update existing and new links
         const linkUpdate = linkEnter.merge(link);
 
-        linkUpdate.transition()
+        // Only animate links that are actually changing
+        linkUpdate
+            .filter(d => {
+                // Animate links that connect to the clicked node or are descendants of it
+                return d === source || d.parent === source || this.isDescendantOf(d, source);
+            })
+            .transition()
             .duration(750)
+            .attr('d', d => this.diagonal(d, d.parent));
+
+        // For links that aren't changing, update immediately without animation
+        linkUpdate
+            .filter(d => {
+                return d !== source && d.parent !== source && !this.isDescendantOf(d, source);
+            })
             .attr('d', d => this.diagonal(d, d.parent));
 
         // Remove exiting links
         link.exit().transition()
-            .duration(750)
-            .attr('d', d => {
-                const o = { x: source.x, y: source.y };
-                return this.diagonal(o, o);
-            })
-            .remove();
+                    .duration(750)
+                    .attr('d', d => {
+                        const o = { x: source.x, y: source.y };
+                        return this.diagonal(o, o);
+                    })
+                    .remove();
 
         // Store the old positions for transition
         nodes.forEach(d => {
             d.x0 = d.x;
             d.y0 = d.y;
         });
+    }
+
+    // Helper method to check if a node is a descendant of another node
+    isDescendantOf(node, ancestor) {
+        let current = node.parent;
+        while (current) {
+            if (current === ancestor) {
+                return true;
+            }
+            current = current.parent;
+        }
+        return false;
     }
 
     // Get node color based on type and state
@@ -326,7 +356,7 @@ export default class ShowHeirarchy extends LightningElement {
     click(event, d, g) {
         // Check if node has children or collapsed children
         const hasChildren = d.children || d._children;
-        
+
         if (!hasChildren) {
             // Leaf node - don't perform transition animation
             return;
