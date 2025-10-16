@@ -10,8 +10,6 @@ public with sharing class OTPController {
         }
     }
 
-
-
     // Generate and send OTP
     @AuraEnabled
     public static void generateAndSendOTP(String email) {
@@ -22,6 +20,7 @@ public with sharing class OTPController {
         // Generate 6-digit OTP
         String otp = String.valueOf(Math.round(Math.random() * 899999) + 100000);
         
+        // Session Partition : Per User Partition.
         Cache.SessionPartition sessionPartition = Cache.Session.getPartition('local.OTP');
 
         // Store OTP in memory with 5-minute expiration

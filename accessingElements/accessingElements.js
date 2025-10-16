@@ -14,9 +14,9 @@ export default class AccessingElements extends LightningElement {
             item.setAttribute("title", item.innerText);
         })
 
-        // lwc:manual => manually add an innerHTML  -> without this the innnerHtml append will throw an error but will still work. 
+        // lwc:manual => manually add an innerHTML -> without this the innnerHTML append will throw an error but will still work. 
         const childEle = this.template.querySelector('.child');
-        childEle.innerHTML = '<p>Inner HTML</p>';
+        childEle.innerHTML = '<p>Paragraph</p>';
     }
 
 }
