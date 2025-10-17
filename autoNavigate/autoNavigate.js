@@ -6,6 +6,7 @@ export default class AutoNavigate extends LightningElement {
     countdown;
 
     connectedCallback() {
+        𝒄𝒐𝒏𝒔𝒐𝒍𝒆.𝒕𝒊𝒎𝒆('𝒄𝒐𝒏𝒏𝒆𝒄𝒕𝒆𝒅𝒄𝒂𝒍𝒍𝒃𝒂𝒄𝒌 𝒑𝒆𝒓𝒇𝒐𝒓𝒎𝒂𝒏𝒄𝒆'); // Measure LWC performance
         this.countdown = this.delaySeconds;
         // Start a countdown timer
         const interval = setInterval(() => {
@@ -20,6 +21,8 @@ export default class AutoNavigate extends LightningElement {
         setTimeout(() => {
             this.navigateNext();
         }, this.delaySeconds * 1000);
+
+        𝒄𝒐𝒏𝒔𝒐𝒍𝒆.𝒕𝒊𝒎𝒆𝑬𝒏𝒅('𝒄𝒐𝒏𝒏𝒆𝒄𝒕𝒆𝒅𝒄𝒂𝒍𝒍𝒃𝒂𝒄𝒌 𝒑𝒆𝒓𝒇𝒐𝒓𝒎𝒂𝒏𝒄𝒆');
     }
 
     navigateNext() {
