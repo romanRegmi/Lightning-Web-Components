@@ -1,0 +1,54 @@
+<template>
+    <lightning-card title="OTP Generator" icon-name="utility:lock">
+        <div class="slds-p-around_medium">
+            <!-- Email Input -->
+            <lightning-input
+                type="email"
+                label="Enter Email"
+                value={email}
+                onchange={handleEmailChange}
+                placeholder="Enter your email"
+                required
+            ></lightning-input>
+
+            <!-- Generate OTP Button -->
+            <lightning-button
+                label="Generate OTP"
+                variant="brand"
+                onclick={handleGenerateOTP}
+                class="slds-m-top_small"
+                disabled={disableGenerateOTP}
+            ></lightning-button>
+
+            <!-- OTP Input -->
+            <lightning-input
+                type="text"
+                label="Enter OTP"
+                value={otp}
+                onchange={handleOTPChange}
+                maxlength="6"
+                pattern="[0-9]{6}"
+                placeholder="Enter the OTP sent to your email"
+                class="slds-m-top_small"
+            ></lightning-input>
+
+            <!-- Verify OTP Button -->
+            <lightning-button
+                label="Verify OTP"
+                variant="success"
+                onclick={handleVerifyOTP}
+                class="slds-m-top_small"
+                disabled={isLoading}
+            ></lightning-button>
+
+            <div class="slds-var-p-around_small">
+                <p>{timerText}</p>
+            </div>
+
+            <!-- Spinner for loading state -->
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+            </template>
+        </div>
+    </lightning-card>
+</template>
